@@ -6,7 +6,6 @@ import com.muzix.auth.dto.ChangePasswordRequest;
 import com.muzix.auth.dto.RegisterRequest;
 import com.muzix.auth.entity.User;
 import com.muzix.auth.exception.UserAlreadyExistsException;
-import com.muzix.auth.exception.InvalidCredentialsException;
 import com.muzix.auth.exception.UserNotFoundException;
 import com.muzix.auth.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -24,10 +23,10 @@ public class AuthenticationService {
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
 
-    public AuthenticationResponse register(RegisterRequest request) {
+    public String register(RegisterRequest request) {
         // Check if user already exists
         if (userRepository.findByEmail(request.getEmail()).isPresent()) {
-            throw new UserAlreadyExistsException("User with email " + request.getEmail() + " already exists");
+            throw new UserAlreadyExistsException("User already exists with email: " + request.getEmail());
         }
 
         var user = new User();
@@ -36,28 +35,21 @@ public class AuthenticationService {
 
         userRepository.save(user);
 
-        var jwtToken = jwtService.generateToken(user);
-        return AuthenticationResponse.builder()
-                .token(jwtToken)
-                .build();
+        return "User registered successfully";
     }
 
-    public AuthenticationResponse authenticate(AuthenticationRequest request) {
-        // Check if user exists before authentication
-        var user = userRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new UserNotFoundException("User with email " + request.getEmail() + " not found"));
-
-        try {
-            authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(
-                            request.getEmail(),
-                            request.getPassword()
-                    )
-            );
-        } catch (Exception e) {
-            throw new InvalidCredentialsException("Invalid email or password");
+    public AuthenticationResponse login(AuthenticationRequest request) {
+        if (userRepository.findByEmail(request.getEmail()).isEmpty()) {
+           throw new UserNotFoundException("User not found with email: " + request.getEmail());
         }
-
+        authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(
+                        request.getEmail(),
+                        request.getPassword()
+                )
+        );
+        var user = userRepository.findByEmail(request.getEmail())
+                .orElseThrow();
         var jwtToken = jwtService.generateToken(user);
         return AuthenticationResponse.builder()
                 .token(jwtToken)
@@ -66,7 +58,7 @@ public class AuthenticationService {
 
     public void changePassword(ChangePasswordRequest request, UserDetails userDetails) {
         var user = userRepository.findByEmail(userDetails.getUsername())
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new UserNotFoundException("User not found"));
 
         if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPassword())) {
             throw new RuntimeException("Current password is incorrect");
