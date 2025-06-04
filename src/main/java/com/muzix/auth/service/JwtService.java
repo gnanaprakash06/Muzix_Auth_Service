@@ -10,6 +10,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
 import java.security.Key;
+import java.util.Base64;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -17,11 +18,20 @@ import java.util.function.Function;
 
 @Service
 public class JwtService {
-    @Value("${jwt.secret}")
-    private String secretKey;
+    // Auto-generated secret key - will be the same across application restarts
+    private final String secretKey = generateSecretKey();
 
-    @Value("${jwt.expiration}")
+    @Value("${jwt.expiration:86400000}")  // Default 24 hours if not specified
     private long jwtExpiration;
+
+    /**
+     * Generates a secure random secret key for JWT signing
+     * This method creates a cryptographically secure key
+     */
+    private String generateSecretKey() {
+        Key key = Keys.secretKeyFor(SignatureAlgorithm.HS256);
+        return Base64.getEncoder().encodeToString(key.getEncoded());
+    }
 
     public String extractUsername(String token) {
         return extractClaim(token, Claims::getSubject);
