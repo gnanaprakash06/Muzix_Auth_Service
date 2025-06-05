@@ -22,7 +22,7 @@ public class UserController {
             @RequestBody ChangePasswordRequest request,
             @AuthenticationPrincipal UserDetails userDetails
     ) {
-        authenticationService.changePassword(request, userDetails);
+        authenticationService.changePassword(request);
         return ResponseEntity.ok("Password changed successfully");
     }
 }

@@ -56,13 +56,13 @@ public class AuthenticationService {
                 .build();
     }
 
-    public void changePassword(ChangePasswordRequest request, UserDetails userDetails) {
-        var user = userRepository.findByEmail(userDetails.getUsername())
+    public void changePassword(ChangePasswordRequest request) {
+        var user = userRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new UserNotFoundException("User not found"));
 
-        if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPassword())) {
-            throw new RuntimeException("Current password is incorrect");
-        }
+//        if (!passwordEncoder.matches(request.getEmail(), user.getPassword())) {
+//            throw new RuntimeException("Current password is incorrect");
+//        }
 
         if (!request.getNewPassword().equals(request.getConfirmationPassword())) {
             throw new RuntimeException("New passwords don't match");
